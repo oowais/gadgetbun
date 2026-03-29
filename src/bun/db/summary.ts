@@ -14,13 +14,14 @@ const GPX_FILE_LOCATIONS = join(
 
 export async function getRecentActivities(
   limit: number,
+  offset: number,
 ): Promise<ActivitySummary[]> {
   const rows = db()
     .query<
       Omit<ActivitySummary, "pointCount" | "gpxTrackFilename"> & {
         gpxTrack: string | null;
       },
-      [number]
+      [number, number]
     >(
       `SELECT NAME as name, START_TIME as startTime, END_TIME as endTime, ACTIVITY_KIND as kind, GPX_TRACK as gpxTrack
        FROM ${BASE_ACTIVITY_SCHEMA}

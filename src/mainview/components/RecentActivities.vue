@@ -9,16 +9,33 @@ const loading = ref(true);
 const error = ref("");
 const selectedGpxContent = ref<string | null>(null);
 const selectedActivityId = ref<number | null>(null);
+const hasMore = ref(true);
+const loadingMore = ref(false);
 
-async function loadActivities() {
-    loading.value = true;
+const BATCH_SIZE = 15;
+
+async function loadActivities(loadMore = false) {
+    if (loadMore) loadingMore.value = true;
+    else {
+        loading.value = true;
+        activities.value = []; // Clear existing activities on a fresh load
+    }
     error.value = "";
+
     try {
-        activities.value = await rpc.request.getRecentActivities({ limit: 15 });
+        const newActivities = await rpc.request.getRecentActivities({
+            limit: BATCH_SIZE,
+            offset: loadMore ? activities.value.length : 0,
+        });
+
+        if (newActivities.length < BATCH_SIZE) hasMore.value = false;
+
+        activities.value.push(...newActivities);
     } catch (e: any) {
         error.value = e.message ?? "Failed to load activities";
     } finally {
-        loading.value = false;
+        if (loadMore) loadingMore.value = false;
+        else loading.value = false;
     }
 }
 
@@ -32,13 +49,11 @@ async function selectActivity(activity: ActivitySummary) {
         const trackData = await rpc.request.getGpxTrack({
             filename: activity.gpxTrackFilename,
         });
-        if (trackData) {
-            selectedGpxContent.value = trackData.gpxString;
-        } else {
+        if (trackData) selectedGpxContent.value = trackData.gpxString;
+        else
             alert(
                 "Could not find or read the GPX file on the local filesystem.",
             );
-        }
     } catch (e: any) {
         alert(`Error loading GPX data: ${e.message}`);
     }
@@ -87,7 +102,9 @@ onMounted(loadActivities);
     <div class="activities-container">
         <div class="list-panel">
             <h2>Recent Activities</h2>
-            <div v-if="loading" class="state">Loading...</div>
+            <div v-if="loading && !activities.length" class="state">
+                Loading...
+            </div>
             <div v-else-if="error" class="state error">{{ error }}</div>
             <ul v-else class="activity-list">
                 <li
@@ -126,6 +143,11 @@ onMounted(loadActivities);
                     </div>
                 </li>
             </ul>
+            <div class="load-more-container" v-if="!loading && hasMore">
+                <button @click="loadActivities(true)" :disabled="loadingMore">
+                    {{ loadingMore ? "Loading..." : "Load More" }}
+                </button>
+            </div>
         </div>
         <div class="map-panel">
             <ActivityMap
@@ -220,5 +242,26 @@ onMounted(loadActivities);
 }
 .state.error {
     color: #f87171;
+}
+.load-more-container {
+    text-align: center;
+    padding: 10px 0;
+}
+.load-more-container button {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+.load-more-container button:hover {
+    background-color: #2563eb;
+}
+.load-more-container button:disabled {
+    background-color: #64748b;
+    cursor: not-allowed;
 }
 </style>

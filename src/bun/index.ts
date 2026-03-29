@@ -53,7 +53,8 @@ const rpc = BrowserView.defineRPC<AppRPC>({
       getSpo2: ({ days }) => getSpo2(days),
       getPai: ({ days }) => getPai(days),
       getSleepRespiratoryRate: ({ days }) => getSleepRespiratoryRate(days),
-      getRecentActivities: ({ limit }) => getRecentActivities(limit),
+      getRecentActivities: ({ limit, offset }) =>
+        getRecentActivities(limit, offset),
       getGpxTrack: ({ filename }) => getGpxTrack(filename),
     },
     messages: {},

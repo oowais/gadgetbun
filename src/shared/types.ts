@@ -77,7 +77,7 @@ type AppRPC = {
         response: RespiratoryRatePoint[];
       };
       getRecentActivities: {
-        params: { limit: number };
+        params: { limit: number; offset: number };
         response: ActivitySummary[];
       };
       getGpxTrack: {
