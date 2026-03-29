@@ -6,8 +6,8 @@ import type {
 } from "@/shared/types";
 import { Database } from "bun:sqlite";
 
-const SLEEP_LIGHT = new Set([80, 96, 112]);
-const SLEEP_DEEP = new Set([121, 122]);
+const ACTIVITY_SCHEMA = "HUAMI_EXTENDED_ACTIVITY_SAMPLE";
+const HEART_RATE_RESTING_SCHEMA = "HUAMI_HEART_RATE_RESTING_SAMPLE";
 
 let _db: Database | null = null;
 let _dbPath = "";
@@ -16,7 +16,7 @@ export function setDbPath(path: string): boolean {
   try {
     _db = new Database(path, { readonly: true });
     _dbPath = path;
-    _db.query("SELECT 1 FROM MI_BAND_ACTIVITY_SAMPLE LIMIT 1").get();
+    _db.query(`SELECT 1 FROM ${ACTIVITY_SCHEMA} LIMIT 1`).get();
     return true;
   } catch {
     _db = null;
@@ -47,7 +47,7 @@ export function getDailySteps(days: number): DailySteps[] {
   const rows = db()
     .query<{ ts: number; steps: number }, [number]>(
       `SELECT TIMESTAMP as ts, STEPS as steps
-       FROM MI_BAND_ACTIVITY_SAMPLE
+       FROM ${ACTIVITY_SCHEMA}
        WHERE TIMESTAMP >= ? AND STEPS > 0
        ORDER BY TIMESTAMP`,
     )
@@ -62,11 +62,12 @@ export function getDailySteps(days: number): DailySteps[] {
 }
 
 export function getSleepHistory(days: number): SleepBlock[] {
+  // Each row is ~1 min. SLEEP=1 means any sleep, DEEP_SLEEP=1 deep, REM_SLEEP=1 REM.
   const rows = db()
-    .query<{ ts: number; kind: number }, [number]>(
-      `SELECT TIMESTAMP as ts, RAW_KIND as kind
-       FROM MI_BAND_ACTIVITY_SAMPLE
-       WHERE TIMESTAMP >= ? AND RAW_KIND IN (80,96,112,121,122)
+    .query<{ ts: number; sleep: number; deep: number; rem: number }, [number]>(
+      `SELECT TIMESTAMP as ts, SLEEP as sleep, DEEP_SLEEP as deep, REM_SLEEP as rem
+       FROM ${ACTIVITY_SCHEMA}
+       WHERE TIMESTAMP >= ? AND SLEEP = 1
        ORDER BY TIMESTAMP`,
     )
     .all(daysAgo(days));
@@ -80,8 +81,8 @@ export function getSleepHistory(days: number): SleepBlock[] {
       deepMin: 0,
       totalMin: 0,
     };
-    if (SLEEP_LIGHT.has(r.kind)) b.lightMin++;
-    else b.deepMin++;
+    if (r.deep === 1) b.deepMin++;
+    else b.lightMin++; // light + REM both go to light for now
     b.totalMin++;
     blocks.set(nightDate, b);
   }
@@ -92,7 +93,7 @@ export function getHeartRate(days: number): HeartRatePoint[] {
   return db()
     .query<{ timestamp: number; bpm: number }, [number]>(
       `SELECT TIMESTAMP as timestamp, HEART_RATE as bpm
-       FROM MI_BAND_ACTIVITY_SAMPLE
+       FROM ${ACTIVITY_SCHEMA}
        WHERE TIMESTAMP >= ? AND HEART_RATE > 0 AND HEART_RATE < 250
        ORDER BY TIMESTAMP`,
     )
@@ -104,7 +105,7 @@ export function getSummary(): DashboardSummary {
 
   const stepRow = db()
     .query<{ steps: number }, [number]>(
-      `SELECT SUM(STEPS) as steps FROM MI_BAND_ACTIVITY_SAMPLE
+      `SELECT SUM(STEPS) as steps FROM ${ACTIVITY_SCHEMA}
        WHERE TIMESTAMP >= ? AND STEPS > 0`,
     )
     .get(todayTs);
@@ -113,16 +114,15 @@ export function getSummary(): DashboardSummary {
 
   const hrRow = db()
     .query<{ bpm: number }, []>(
-      `SELECT HEART_RATE as bpm FROM MI_BAND_ACTIVITY_SAMPLE
-       WHERE HEART_RATE > 0 AND HEART_RATE < 250
+      `SELECT HEART_RATE as bpm FROM ${HEART_RATE_RESTING_SCHEMA}
        ORDER BY TIMESTAMP DESC LIMIT 1`,
     )
     .get();
 
   const avgRow = db()
     .query<{ avg: number }, [number]>(
-      `SELECT AVG(HEART_RATE) as avg FROM MI_BAND_ACTIVITY_SAMPLE
-       WHERE TIMESTAMP >= ? AND HEART_RATE > 0 AND HEART_RATE < 250`,
+      `SELECT AVG(HEART_RATE) as avg FROM ${HEART_RATE_RESTING_SCHEMA}
+       WHERE TIMESTAMP >= ?`,
     )
     .get(daysAgo(7));
 
