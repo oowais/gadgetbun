@@ -46,6 +46,15 @@ interface RespiratoryRatePoint {
   rate: number;
 }
 
+interface ActivitySummary {
+  name: string | null;
+  startTime: number;
+  endTime: number;
+  kind: number;
+  gpxTrack: string | null;
+  gpxTrackFilename: string | null;
+}
+
 type AppRPC = {
   bun: RPCSchema<{
     requests: {
@@ -62,6 +71,14 @@ type AppRPC = {
         params: { days: number };
         response: RespiratoryRatePoint[];
       };
+      getRecentActivities: {
+        params: { limit: number };
+        response: ActivitySummary[];
+      };
+      getGpxTrack: {
+        params: { filename: string };
+        response: string | null;
+      };
     };
     messages: Record<string, never>;
   }>;
@@ -72,6 +89,7 @@ type AppRPC = {
 };
 
 export type {
+  ActivitySummary,
   AppRPC,
   DailySteps,
   DashboardSummary,

@@ -14,12 +14,18 @@ import {
   getSpo2,
   getStress,
 } from "./db/stress";
+import { getGpxTrack, getRecentActivities } from "./db/summary";
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
 
-// Try default Syncthing path on startup
-const DEFAULT = join(process.env.HOME ?? "", "Downloads", "Gadgetbridge");
+const DEFAULT = join(
+  process.env.HOME ?? "",
+  "Downloads",
+  "Gadgetbridge",
+  "database",
+  "Gadgetbridge",
+);
 setDbPath(DEFAULT + ".db") || setDbPath(DEFAULT);
 
 async function getMainViewUrl(): Promise<string> {
@@ -47,6 +53,8 @@ const rpc = BrowserView.defineRPC<AppRPC>({
       getSpo2: ({ days }) => getSpo2(days),
       getPai: ({ days }) => getPai(days),
       getSleepRespiratoryRate: ({ days }) => getSleepRespiratoryRate(days),
+      getRecentActivities: ({ limit }) => getRecentActivities(limit),
+      getGpxTrack: ({ filename }) => getGpxTrack(filename),
     },
     messages: {},
   },

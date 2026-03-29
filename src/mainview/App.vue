@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import DbPathConfig from "@/mainview/components/DbPathConfig.vue";
+import HeartRateChart from "@/mainview/components/HeartRateChart.vue";
+import PaiChart from "@/mainview/components/PaiChart.vue";
+import RecentActivities from "@/mainview/components/RecentActivities.vue";
+import RespiratoryRateChart from "@/mainview/components/RespiratoryRateChart.vue";
+import SleepChart from "@/mainview/components/SleepChart.vue";
+import Spo2Chart from "@/mainview/components/Spo2Chart.vue";
+import StepsChart from "@/mainview/components/StepsChart.vue";
+import StressChart from "@/mainview/components/StressChart.vue";
 import type { DashboardSummary } from "@/shared/types";
 import { inject, onMounted, ref } from "vue";
-import DbPathConfig from "./components/DbPathConfig.vue";
-import HeartRateChart from "./components/HeartRateChart.vue";
-import PaiChart from "./components/PaiChart.vue";
-import RespiratoryRateChart from "./components/RespiratoryRateChart.vue";
-import SleepChart from "./components/SleepChart.vue";
-import Spo2Chart from "./components/Spo2Chart.vue";
-import StepsChart from "./components/StepsChart.vue";
-import StressChart from "./components/StressChart.vue";
 
 const rpc = inject<any>("rpc");
 const summary = ref<DashboardSummary | null>(null);
@@ -87,6 +88,10 @@ const fmtSleep = (min: number) => `${Math.floor(min / 60)}h ${min % 60}m`;
                 <Spo2Chart />
                 <PaiChart />
                 <RespiratoryRateChart />
+            </section>
+
+            <section class="activities">
+                <RecentActivities />
             </section>
         </template>
     </div>
@@ -176,5 +181,8 @@ header h1 {
 .charts > :nth-child(1),
 .charts > :nth-child(2) {
     grid-column: 1 / -1;
+}
+.activities {
+    margin-top: 16px;
 }
 </style>
