@@ -44,17 +44,16 @@ export async function getRecentActivities(
       const gpxFilePath = join(GPX_FILE_LOCATIONS, activity.gpxTrackFilename);
       try {
         const f = file(gpxFilePath);
-        if (await f.exists()) {
-          const gpxString = await f.text();
-          const gpx = GPX.parse(gpxString);
-          const trackPointCount =
-            gpx.trk?.reduce(
-              (acc: any, trk: any) =>
-                acc + (trk.trkseg?.flatMap((s: any) => s.trkpt)?.length ?? 0),
-              0,
-            ) ?? 0;
-          activity.pointCount = trackPointCount;
-        }
+        if (!(await f.exists())) continue;
+        const gpxString = await f.text();
+        const gpx = GPX.parse(gpxString);
+        const trackPointCount =
+          gpx.trk?.reduce(
+            (acc: number, trk: any) =>
+              acc + (trk.trkseg?.flatMap((s: any) => s.trkpt)?.length ?? 0),
+            0,
+          ) ?? 0;
+        activity.pointCount = trackPointCount;
       } catch (e) {
         console.error(
           `Could not process GPX for ${activity.gpxTrackFilename}:`,

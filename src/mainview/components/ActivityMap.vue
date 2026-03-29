@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GpxParser from "gpx-parser-builder";
+import GPX from "gpx-parser-builder";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { onMounted, ref, watch } from "vue";
@@ -24,9 +24,7 @@ L.Icon.Default.mergeOptions({
 
 function initializeMap() {
     if (mapContainer.value && !map) {
-        // Initialize map without a default view
         map = L.map(mapContainer.value);
-
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution:
                 '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -37,28 +35,26 @@ function initializeMap() {
 function renderGpx() {
     if (!map) return;
 
-    // Clear previous layer if it exists
     if (gpxLayer) {
         map.removeLayer(gpxLayer);
         gpxLayer = null;
     }
 
-    // If no new GPX data, do nothing further
     if (!props.gpxData) {
-        // Optionally, reset view or show a world view
-        map.setView([20, 0], 2); // Zoom out to a world view
+        map.setView([20, 0], 2);
         return;
     }
 
     try {
-        const parser = new GpxParser(props.gpxData);
-        const parsedGpx = parser.parse();
-
-        if (parsedGpx.tracks.length === 0) return;
-
-        const points: L.LatLngExpression[] = parsedGpx.tracks[0].points.map(
-            (p: any) => [p.lat, p.lon],
-        );
+        const gpx = GPX.parse(props.gpxData);
+        console.log(gpx.trk);
+        const points: L.LatLngExpression[] =
+            gpx.trk?.flatMap(
+                (t: any) =>
+                    t.trkseg?.flatMap((s: any) =>
+                        s.trkpt.map((p: any) => [p.$.lat, p.$.lon]),
+                    ) ?? [],
+            ) ?? [];
 
         if (points.length === 0) return;
 
@@ -72,7 +68,9 @@ function renderGpx() {
         }
 
         gpxLayer.addTo(map);
-        map.fitBounds(trackLine.getBounds(), { padding: [20, 20] });
+
+        const bounds = trackLine.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
     } catch (e) {
         console.error("Failed to parse or render GPX data:", e);
     }

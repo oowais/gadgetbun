@@ -68,7 +68,7 @@ const getActivityName = (kind: number) => {
         case 16:
             return "Generic";
         default:
-            return `Activity #${kind}`;
+            return `Activity ${kind}`;
     }
 };
 
