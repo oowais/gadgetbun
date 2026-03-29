@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ActivityMap from "@/mainview/components/ActivityMap.vue";
 import type { ActivitySummary } from "@/shared/types";
-import { inject, onMounted, ref } from "vue";
+import { inject, onMounted, reactive, ref } from "vue";
 
 const rpc = inject<any>("rpc");
 const activities = ref<ActivitySummary[]>([]);
@@ -9,6 +9,9 @@ const loading = ref(true);
 const error = ref("");
 const selectedGpxContent = ref<string | null>(null);
 const selectedActivityId = ref<number | null>(null);
+const trackDetails = reactive<{ [key: number]: { pointCount: number | null } }>(
+    {},
+);
 
 async function loadActivities() {
     loading.value = true;
@@ -26,16 +29,23 @@ async function selectActivity(activity: ActivitySummary) {
     selectedGpxContent.value = null;
     selectedActivityId.value = activity.startTime;
 
-    if (!activity.gpxTrackFilename) {
+    if (trackDetails[activity.startTime]) {
+        // Already fetched, no need to do it again unless you want to support re-fetching
         return;
     }
+
+    if (!activity.gpxTrackFilename) return;
     try {
-        const gpxData = await rpc.request.getGpxTrack({
+        const trackData = await rpc.request.getGpxTrack({
             filename: activity.gpxTrackFilename,
         });
-        if (gpxData) {
-            selectedGpxContent.value = gpxData;
+        if (trackData) {
+            selectedGpxContent.value = trackData.gpxString;
+            trackDetails[activity.startTime] = {
+                pointCount: trackData.pointCount,
+            };
         } else {
+            trackDetails[activity.startTime] = { pointCount: null };
             alert(
                 "Could not find or read the GPX file on the local filesystem.",
             );
@@ -46,21 +56,18 @@ async function selectActivity(activity: ActivitySummary) {
 }
 
 const formatDuration = (startMillis: number, endMillis: number) => {
-    // Calculate duration in seconds from millisecond timestamps
     const durationSeconds = (endMillis - startMillis) / 1000;
     if (durationSeconds < 0) return "0s";
-
     const h = Math.floor(durationSeconds / 3600);
     const m = Math.floor((durationSeconds % 3600) / 60);
     const s = Math.floor(durationSeconds % 60);
-
     const parts = [];
     if (h > 0) parts.push(`${h}h`);
     if (m > 0) parts.push(`${m}m`);
-    if (s > 0 || parts.length === 0) parts.push(`${s}s`); // Show '0s' for very short durations
-
+    if (s > 0 || parts.length === 0) parts.push(`${s}s`);
     return parts.join(" ");
 };
+
 const getActivityName = (kind: number) => {
     switch (kind) {
         case 1:
@@ -121,8 +128,19 @@ onMounted(loadActivities);
                         <span
                             v-if="activity.gpxTrackFilename"
                             class="gpx-indicator"
-                            >🗺️ Map</span
                         >
+                            🗺️ Map
+                            <span
+                                v-if="trackDetails[activity.startTime]"
+                                class="point-count"
+                            >
+                                ({{
+                                    trackDetails[activity.startTime]
+                                        ?.pointCount ?? "N/A"
+                                }}
+                                pts)
+                            </span>
+                        </span>
                     </div>
                 </li>
             </ul>
@@ -201,6 +219,11 @@ onMounted(loadActivities);
 .gpx-indicator {
     color: #10b981;
     font-weight: 500;
+}
+.point-count {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-left: 4px;
 }
 .map-panel {
     background-color: #0f1117;

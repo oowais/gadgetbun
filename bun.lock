@@ -7,7 +7,6 @@
       "dependencies": {
         "chart.js": "^4.5.1",
         "electrobun": "1.16.0",
-        "gpx-parser-builder": "^1.2.0",
         "leaflet": "^1.9.4",
       },
       "devDependencies": {
@@ -15,6 +14,7 @@
         "@types/leaflet": "^1.9.21",
         "@vitejs/plugin-vue": "^5.2.1",
         "concurrently": "^9.1.0",
+        "gpx-parser-builder": "^1.2.0",
         "typescript": "^5.7.2",
         "vite": "^6.0.3",
         "vue": "^3.5.13",

@@ -55,6 +55,11 @@ interface ActivitySummary {
   gpxTrackFilename: string | null;
 }
 
+interface GpxTrackData {
+  gpxString: string;
+  pointCount: number;
+}
+
 type AppRPC = {
   bun: RPCSchema<{
     requests: {
@@ -77,7 +82,7 @@ type AppRPC = {
       };
       getGpxTrack: {
         params: { filename: string };
-        response: string | null;
+        response: GpxTrackData | null;
       };
     };
     messages: Record<string, never>;
@@ -93,6 +98,7 @@ export type {
   AppRPC,
   DailySteps,
   DashboardSummary,
+  GpxTrackData,
   HeartRatePoint,
   PaiPoint,
   RespiratoryRatePoint,
