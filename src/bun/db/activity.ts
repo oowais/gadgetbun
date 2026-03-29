@@ -4,46 +4,11 @@ import type {
   HeartRatePoint,
   SleepBlock,
 } from "@/shared/types";
-import { Database } from "bun:sqlite";
+import { db } from ".";
+import { ACTIVITY_SCHEMA, HEART_RATE_RESTING_SCHEMA } from "./constants";
+import { daysAgo, tsToDate } from "./util";
 
-const ACTIVITY_SCHEMA = "HUAMI_EXTENDED_ACTIVITY_SAMPLE";
-const HEART_RATE_RESTING_SCHEMA = "HUAMI_HEART_RATE_RESTING_SAMPLE";
-
-let _db: Database | null = null;
-let _dbPath = "";
-
-export function setDbPath(path: string): boolean {
-  try {
-    _db = new Database(path, { readonly: true });
-    _dbPath = path;
-    _db.query(`SELECT 1 FROM ${ACTIVITY_SCHEMA} LIMIT 1`).get();
-    return true;
-  } catch {
-    _db = null;
-    return false;
-  }
-}
-
-export function getDbPath() {
-  return _dbPath;
-}
-
-function db(): Database {
-  if (!_db) throw new Error("DB not configured");
-  return _db;
-}
-
-function nowSec() {
-  return Math.floor(Date.now() / 1000);
-}
-function daysAgo(n: number) {
-  return nowSec() - n * 86400;
-}
-function tsToDate(ts: number) {
-  return new Date(ts * 1000).toISOString().slice(0, 10);
-}
-
-export function getDailySteps(days: number): DailySteps[] {
+function getDailySteps(days: number): DailySteps[] {
   const rows = db()
     .query<{ ts: number; steps: number }, [number]>(
       `SELECT TIMESTAMP as ts, STEPS as steps
@@ -61,7 +26,7 @@ export function getDailySteps(days: number): DailySteps[] {
   return [...map.entries()].map(([date, steps]) => ({ date, steps }));
 }
 
-export function getSleepHistory(days: number): SleepBlock[] {
+function getSleepHistory(days: number): SleepBlock[] {
   // Each row is ~1 min. SLEEP=1 means any sleep, DEEP_SLEEP=1 deep, REM_SLEEP=1 REM.
   const rows = db()
     .query<{ ts: number; sleep: number; deep: number; rem: number }, [number]>(
@@ -89,7 +54,7 @@ export function getSleepHistory(days: number): SleepBlock[] {
   return [...blocks.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function getHeartRate(days: number): HeartRatePoint[] {
+function getHeartRate(days: number): HeartRatePoint[] {
   return db()
     .query<{ timestamp: number; bpm: number }, [number]>(
       `SELECT TIMESTAMP as timestamp, HEART_RATE as bpm
@@ -100,7 +65,7 @@ export function getHeartRate(days: number): HeartRatePoint[] {
     .all(daysAgo(days));
 }
 
-export function getSummary(): DashboardSummary {
+function getSummary(): DashboardSummary {
   const todayTs = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
 
   const stepRow = db()
@@ -133,3 +98,5 @@ export function getSummary(): DashboardSummary {
     avgHR7d: Math.round(avgRow?.avg ?? 0),
   };
 }
+
+export { getDailySteps, getHeartRate, getSleepHistory, getSummary };

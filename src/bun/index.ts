@@ -1,14 +1,19 @@
 import { BrowserView, BrowserWindow, Updater } from "electrobun/bun";
 import { join } from "path";
 import type { AppRPC } from "../shared/types";
+import { getDbPath, setDbPath } from "./db";
 import {
   getDailySteps,
-  getDbPath,
   getHeartRate,
   getSleepHistory,
   getSummary,
-  setDbPath,
-} from "./db";
+} from "./db/activity";
+import {
+  getPai,
+  getSleepRespiratoryRate,
+  getSpo2,
+  getStress,
+} from "./db/stress";
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
@@ -38,6 +43,10 @@ const rpc = BrowserView.defineRPC<AppRPC>({
       getDailySteps: ({ days }) => getDailySteps(days),
       getSleepHistory: ({ days }) => getSleepHistory(days),
       getHeartRate: ({ days }) => getHeartRate(days),
+      getStress: ({ days }) => getStress(days),
+      getSpo2: ({ days }) => getSpo2(days),
+      getPai: ({ days }) => getPai(days),
+      getSleepRespiratoryRate: ({ days }) => getSleepRespiratoryRate(days),
     },
     messages: {},
   },
