@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ActivityMap from "@/mainview/components/ActivityMap.vue";
 import type { ActivitySummary } from "@/shared/types";
-import { inject, onMounted, reactive, ref } from "vue";
+import { inject, onMounted, ref } from "vue";
 
 const rpc = inject<any>("rpc");
 const activities = ref<ActivitySummary[]>([]);
@@ -9,9 +9,6 @@ const loading = ref(true);
 const error = ref("");
 const selectedGpxContent = ref<string | null>(null);
 const selectedActivityId = ref<number | null>(null);
-const trackDetails = reactive<{ [key: number]: { pointCount: number | null } }>(
-    {},
-);
 
 async function loadActivities() {
     loading.value = true;
@@ -29,23 +26,15 @@ async function selectActivity(activity: ActivitySummary) {
     selectedGpxContent.value = null;
     selectedActivityId.value = activity.startTime;
 
-    if (trackDetails[activity.startTime]) {
-        // Already fetched, no need to do it again unless you want to support re-fetching
-        return;
-    }
-
     if (!activity.gpxTrackFilename) return;
+
     try {
         const trackData = await rpc.request.getGpxTrack({
             filename: activity.gpxTrackFilename,
         });
         if (trackData) {
             selectedGpxContent.value = trackData.gpxString;
-            trackDetails[activity.startTime] = {
-                pointCount: trackData.pointCount,
-            };
         } else {
-            trackDetails[activity.startTime] = { pointCount: null };
             alert(
                 "Could not find or read the GPX file on the local filesystem.",
             );
@@ -130,15 +119,8 @@ onMounted(loadActivities);
                             class="gpx-indicator"
                         >
                             🗺️ Map
-                            <span
-                                v-if="trackDetails[activity.startTime]"
-                                class="point-count"
-                            >
-                                ({{
-                                    trackDetails[activity.startTime]
-                                        ?.pointCount ?? "N/A"
-                                }}
-                                pts)
+                            <span class="point-count">
+                                ({{ activity.pointCount ?? "N/A" }} pts)
                             </span>
                         </span>
                     </div>

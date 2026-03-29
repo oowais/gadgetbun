@@ -53,11 +53,11 @@ interface ActivitySummary {
   kind: number;
   gpxTrack: string | null;
   gpxTrackFilename: string | null;
+  pointCount?: number;
 }
 
 interface GpxTrackData {
   gpxString: string;
-  pointCount: number;
 }
 
 type AppRPC = {

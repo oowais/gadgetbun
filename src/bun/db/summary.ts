@@ -12,14 +12,12 @@ const GPX_FILE_LOCATIONS = join(
   "files",
 );
 
-function getRecentActivities(limit: number): ActivitySummary[] {
+export async function getRecentActivities(
+  limit: number,
+): Promise<ActivitySummary[]> {
   const rows = db()
     .query<
-      {
-        name: string | null;
-        startTime: number;
-        endTime: number;
-        kind: number;
+      Omit<ActivitySummary, "pointCount" | "gpxTrackFilename"> & {
         gpxTrack: string | null;
       },
       [number]
@@ -31,7 +29,7 @@ function getRecentActivities(limit: number): ActivitySummary[] {
     )
     .all(limit);
 
-  return rows.map((r) => ({
+  const activities: ActivitySummary[] = rows.map((r) => ({
     name: r.name,
     startTime: r.startTime,
     endTime: r.endTime,
@@ -39,37 +37,52 @@ function getRecentActivities(limit: number): ActivitySummary[] {
     gpxTrack: r.gpxTrack,
     gpxTrackFilename: r.gpxTrack ? basename(r.gpxTrack) : null,
   }));
+
+  // Now, iterate and enrich with point counts
+  for (const activity of activities) {
+    if (activity.gpxTrackFilename) {
+      const gpxFilePath = join(GPX_FILE_LOCATIONS, activity.gpxTrackFilename);
+      try {
+        const f = file(gpxFilePath);
+        if (await f.exists()) {
+          const gpxString = await f.text();
+          const gpx = GPX.parse(gpxString);
+          const trackPointCount =
+            gpx.trk?.reduce(
+              (acc: any, trk: any) =>
+                acc + (trk.trkseg?.flatMap((s: any) => s.trkpt)?.length ?? 0),
+              0,
+            ) ?? 0;
+          activity.pointCount = trackPointCount;
+        }
+      } catch (e) {
+        console.error(
+          `Could not process GPX for ${activity.gpxTrackFilename}:`,
+          e,
+        );
+        activity.pointCount = 0;
+      }
+    }
+  }
+
+  return activities;
 }
 
-async function getGpxTrack(filename: string): Promise<GpxTrackData | null> {
+// This function is now only for fetching the content for the map
+export async function getGpxTrack(
+  filename: string,
+): Promise<GpxTrackData | null> {
   if (!filename) return null;
-
   const gpxFilePath = join(GPX_FILE_LOCATIONS, filename);
-
   try {
     const f = file(gpxFilePath);
-    if (!(await f.exists())) {
-      console.error(`GPX file not found at: ${gpxFilePath}`);
-      return null;
+    if (await f.exists()) {
+      const gpxString = await f.text();
+      return { gpxString };
     }
-
-    const gpxString = await f.text();
-
-    // Parse the GPX string to count the points
-    const gpx = GPX.parse(gpxString);
-    const trackCount = gpx.trk?.length ?? 0;
-    const pointCount =
-      trackCount.reduce(
-        (acc: any, trk: any) =>
-          acc + (trk.trkseg?.flatMap((s: any) => s.trkpt)?.length ?? 0),
-        0,
-      ) ?? 0;
-
-    return { gpxString, pointCount };
+    return null;
   } catch (e) {
-    console.error(`Error reading or parsing GPX file: ${e}`);
+    console.error(`Error reading GPX file: ${e}`);
     return null;
   }
 }
-
-export { getGpxTrack, getRecentActivities };
