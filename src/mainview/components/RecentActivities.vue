@@ -82,6 +82,8 @@ const getActivityName = (kind: number) => {
             return "Cycling";
         case 16:
             return "Generic";
+        case 32:
+            return "Automatic";
         default:
             return `Activity ${kind}`;
     }

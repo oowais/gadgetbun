@@ -26,9 +26,9 @@ export async function getRecentActivities(
       `SELECT NAME as name, START_TIME as startTime, END_TIME as endTime, ACTIVITY_KIND as kind, GPX_TRACK as gpxTrack
        FROM ${BASE_ACTIVITY_SCHEMA}
        ORDER BY START_TIME DESC
-       LIMIT ?`,
+       LIMIT ? OFFSET ?`,
     )
-    .all(limit);
+    .all(limit, offset);
 
   const activities: ActivitySummary[] = rows.map((r) => ({
     name: r.name,
