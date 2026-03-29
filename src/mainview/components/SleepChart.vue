@@ -29,6 +29,12 @@ async function draw() {
                     borderRadius: 4,
                 },
                 {
+                    label: "REM",
+                    data: data.map((d) => +(d.remMin / 60).toFixed(2)),
+                    backgroundColor: "#7c3aedbb",
+                    borderRadius: 4,
+                },
+                {
                     label: "Light",
                     data: data.map((d) => +(d.lightMin / 60).toFixed(2)),
                     backgroundColor: "#3b82f6aa",

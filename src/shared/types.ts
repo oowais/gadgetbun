@@ -1,51 +1,52 @@
 import type { RPCSchema } from "electrobun/bun";
 
-export interface DailySteps {
+interface DailySteps {
   date: string;
   steps: number;
 }
 
-export interface SleepBlock {
+interface SleepBlock {
   date: string;
   lightMin: number;
   deepMin: number;
+  remMin: number;
   totalMin: number;
 }
 
-export interface HeartRatePoint {
+interface HeartRatePoint {
   timestamp: number;
   bpm: number;
 }
 
-export interface DashboardSummary {
+interface DashboardSummary {
   todaySteps: number;
   lastNightSleep: SleepBlock | null;
   currentHR: number | null;
   avgHR7d: number;
 }
 
-export interface StressPoint {
+interface StressPoint {
   timestamp: number;
   value: number;
 }
 
-export interface Spo2Point {
+interface Spo2Point {
   timestamp: number;
   value: number;
 }
 
-export interface PaiPoint {
+interface PaiPoint {
   timestamp: number;
   total: number;
   today: number;
 }
 
-export interface RespiratoryRatePoint {
+interface RespiratoryRatePoint {
   timestamp: number;
   rate: number;
 }
 
-export type AppRPC = {
+type AppRPC = {
   bun: RPCSchema<{
     requests: {
       getDbPath: { params: Record<string, never>; response: string };
@@ -68,4 +69,16 @@ export type AppRPC = {
     requests: Record<string, never>;
     messages: Record<string, never>;
   }>;
+};
+
+export type {
+  AppRPC,
+  DailySteps,
+  DashboardSummary,
+  HeartRatePoint,
+  PaiPoint,
+  RespiratoryRatePoint,
+  SleepBlock,
+  Spo2Point,
+  StressPoint,
 };

@@ -73,6 +73,7 @@ const fmtSleep = (min: number) => `${Math.floor(min / 60)}h ${min % 60}m`;
                     </div>
                     <div class="sub" v-if="summary!.lastNightSleep">
                         Deep: {{ fmtSleep(summary!.lastNightSleep.deepMin) }} ·
+                        REM: {{ fmtSleep(summary!.lastNightSleep.remMin) }} ·
                         Light: {{ fmtSleep(summary!.lastNightSleep.lightMin) }}
                     </div>
                 </div>

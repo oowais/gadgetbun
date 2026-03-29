@@ -27,12 +27,11 @@ function getDailySteps(days: number): DailySteps[] {
 }
 
 function getSleepHistory(days: number): SleepBlock[] {
-  // Each row is ~1 min. SLEEP=1 means any sleep, DEEP_SLEEP=1 deep, REM_SLEEP=1 REM.
   const rows = db()
     .query<{ ts: number; sleep: number; deep: number; rem: number }, [number]>(
       `SELECT TIMESTAMP as ts, SLEEP as sleep, DEEP_SLEEP as deep, REM_SLEEP as rem
-       FROM ${ACTIVITY_SCHEMA}
-       WHERE TIMESTAMP >= ? AND SLEEP = 1
+       FROM HUAMI_EXTENDED_ACTIVITY_SAMPLE
+       WHERE TIMESTAMP >= ? AND RAW_KIND = 120
        ORDER BY TIMESTAMP`,
     )
     .all(daysAgo(days));
@@ -44,10 +43,14 @@ function getSleepHistory(days: number): SleepBlock[] {
       date: nightDate,
       lightMin: 0,
       deepMin: 0,
+      remMin: 0,
       totalMin: 0,
     };
-    if (r.deep === 1) b.deepMin++;
-    else b.lightMin++; // light + REM both go to light for now
+    const rem = r.rem & 127;
+    const deep = r.deep & 127;
+    if (rem > 55) b.remMin++;
+    else if (deep > 42) b.deepMin++;
+    else b.lightMin++;
     b.totalMin++;
     blocks.set(nightDate, b);
   }
