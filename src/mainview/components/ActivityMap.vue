@@ -90,7 +90,7 @@ watch(() => props.gpxData, renderGpx);
 <template>
   <div
     ref="mapContainer"
-    class="relative h-full min-h-[350px] w-full rounded-lg bg-slate-800"
+    class="relative h-full min-h-80 w-full rounded-lg bg-slate-800"
   >
     <div
       v-if="!gpxData"
