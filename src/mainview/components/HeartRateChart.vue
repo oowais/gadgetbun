@@ -73,10 +73,14 @@ onMounted(draw);
 </script>
 
 <template>
-    <div class="chart-card">
-        <div class="chart-header">
-            <h2>Heart Rate</h2>
-            <select v-model="days" @change="draw">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-semibold text-slate-300">Heart Rate</h2>
+            <select
+                v-model="days"
+                @change="draw"
+                class="bg-slate-900 border border-slate-700 text-slate-200 rounded-md py-1 px-2 text-sm"
+            >
                 <option :value="1">Today</option>
                 <option :value="3">3 days</option>
                 <option :value="7">7 days</option>
@@ -85,31 +89,3 @@ onMounted(draw);
         <canvas ref="canvas" height="160" />
     </div>
 </template>
-
-<style scoped>
-.chart-card {
-    background: #1e2130;
-    border: 1px solid #2d3148;
-    border-radius: 12px;
-    padding: 20px 24px;
-}
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-h2 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #cbd5e1;
-}
-select {
-    background: #0f1117;
-    border: 1px solid #2d3148;
-    color: #e2e8f0;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.8rem;
-}
-</style>

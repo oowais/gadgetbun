@@ -17,15 +17,15 @@ const loading = ref(true);
 const error = ref("");
 
 async function loadSummary() {
-    loading.value = true;
-    error.value = "";
-    try {
-        summary.value = await rpc.request.getSummary({});
-    } catch (e: any) {
-        error.value = e.message ?? "Failed to load";
-    } finally {
-        loading.value = false;
-    }
+  loading.value = true;
+  error.value = "";
+  try {
+    summary.value = await rpc.request.getSummary({});
+  } catch (e: any) {
+    error.value = e.message ?? "Failed to load";
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(loadSummary);
@@ -35,154 +35,98 @@ const fmtSleep = (min: number) => `${Math.floor(min / 60)}h ${min % 60}m`;
 </script>
 
 <template>
-    <div class="app">
-        <header>
-            <h1>🩺 Gadgetbridge</h1>
-            <DbPathConfig @refreshed="loadSummary" />
-        </header>
+  <div class="mx-auto max-w-7xl p-4">
+    <header class="mb-7 flex items-center justify-between">
+      <p class="text-4xl font-semibold text-shadow-cyan-700">🩺 Gadgetbun</p>
+      <DbPathConfig @refreshed="loadSummary" />
+    </header>
 
-        <div v-if="loading" class="state">Loading…</div>
-        <div v-else-if="error" class="state error">
-            ⚠ {{ error }}<br /><small>Set the correct DB path above.</small>
-        </div>
-
-        <template v-else>
-            <section class="cards">
-                <div class="card steps">
-                    <div class="label">Today's Steps</div>
-                    <div class="value">{{ fmtSteps(summary!.todaySteps) }}</div>
-                </div>
-                <div class="card hr">
-                    <div class="label">Heart Rate</div>
-                    <div class="value">
-                        {{
-                            summary!.currentHR
-                                ? `${summary!.currentHR} bpm`
-                                : "—"
-                        }}
-                    </div>
-                    <div class="sub">7d avg: {{ summary!.avgHR7d }} bpm</div>
-                </div>
-                <div class="card sleep">
-                    <div class="label">Last Night</div>
-                    <div class="value">
-                        {{
-                            summary!.lastNightSleep
-                                ? fmtSleep(summary!.lastNightSleep.totalMin)
-                                : "—"
-                        }}
-                    </div>
-                    <div class="sub" v-if="summary!.lastNightSleep">
-                        Deep: {{ fmtSleep(summary!.lastNightSleep.deepMin) }} ·
-                        REM: {{ fmtSleep(summary!.lastNightSleep.remMin) }} ·
-                        Light: {{ fmtSleep(summary!.lastNightSleep.lightMin) }}
-                    </div>
-                </div>
-            </section>
-
-            <section class="charts">
-                <StepsChart />
-                <SleepChart />
-                <HeartRateChart />
-                <StressChart />
-                <Spo2Chart />
-                <PaiChart />
-                <RespiratoryRateChart />
-            </section>
-
-            <section class="activities">
-                <RecentActivities />
-            </section>
-        </template>
+    <div v-if="loading" class="p-15 text-center text-slate-400">Loading…</div>
+    <div v-else-if="error" class="p-15 text-center text-red-400">
+      ⚠ {{ error }}<br /><small>Set the correct DB path above.</small>
     </div>
+
+    <template v-else>
+      <section class="mb-7 grid grid-cols-3 gap-4">
+        <div
+          class="rounded-xl border border-t-4 border-slate-700 border-t-indigo-500 bg-slate-800 p-5"
+        >
+          <div class="mb-2 text-xs tracking-widest text-slate-500 uppercase">
+            Today's Steps
+          </div>
+          <div class="text-3xl font-bold">
+            {{ fmtSteps(summary!.todaySteps) }}
+          </div>
+        </div>
+        <div
+          class="rounded-xl border border-t-4 border-slate-700 border-t-red-500 bg-slate-800 p-5"
+        >
+          <div class="mb-2 text-xs tracking-widest text-slate-500 uppercase">
+            Heart Rate
+          </div>
+          <div class="text-3xl font-bold">
+            {{ summary!.currentHR ? `${summary!.currentHR} bpm` : "—" }}
+          </div>
+          <div class="mt-1.5 text-sm text-slate-400">
+            7d avg: {{ summary!.avgHR7d }} bpm
+          </div>
+        </div>
+        <div
+          class="rounded-xl border border-t-4 border-slate-700 border-t-blue-500 bg-slate-800 p-5"
+        >
+          <div class="mb-2 text-xs tracking-widest text-slate-500 uppercase">
+            Last Night
+          </div>
+          <div class="text-3xl font-bold">
+            {{
+              summary!.lastNightSleep
+                ? fmtSleep(summary!.lastNightSleep.totalMin)
+                : "—"
+            }}
+          </div>
+          <div
+            class="mt-1.5 text-sm text-slate-400"
+            v-if="summary!.lastNightSleep"
+          >
+            Deep: {{ fmtSleep(summary!.lastNightSleep.deepMin) }} · REM:
+            {{ fmtSleep(summary!.lastNightSleep.remMin) }} · Light:
+            {{ fmtSleep(summary!.lastNightSleep.lightMin) }}
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-2 gap-4">
+        <StepsChart class="col-span-2" />
+        <SleepChart class="col-span-2" />
+        <HeartRateChart />
+        <StressChart />
+        <Spo2Chart />
+        <PaiChart />
+        <RespiratoryRateChart />
+      </section>
+
+      <section class="mt-4">
+        <RecentActivities />
+      </section>
+    </template>
+  </div>
 </template>
 
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
 body {
-    background: #0f1117;
-    color: #e2e8f0;
-    font-family: system-ui, sans-serif;
-}
-
-.app {
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
+  background: #0f1117;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
 }
 
 header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
 }
 header h1 {
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-
-.state {
-    text-align: center;
-    padding: 60px;
-    color: #94a3b8;
-}
-.state.error {
-    color: #f87171;
-}
-
-.cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-}
-.card {
-    background: #1e2130;
-    border-radius: 12px;
-    padding: 20px 24px;
-    border: 1px solid #2d3148;
-}
-.card .label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #64748b;
-    margin-bottom: 8px;
-}
-.card .value {
-    font-size: 2rem;
-    font-weight: 700;
-}
-.card .sub {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin-top: 6px;
-}
-.card.steps {
-    border-top: 3px solid #6366f1;
-}
-.card.hr {
-    border-top: 3px solid #ef4444;
-}
-.card.sleep {
-    border-top: 3px solid #3b82f6;
-}
-
-.charts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-.charts > :nth-child(1),
-.charts > :nth-child(2) {
-    grid-column: 1 / -1;
-}
-.activities {
-    margin-top: 16px;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 </style>

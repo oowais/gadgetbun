@@ -68,4 +68,19 @@ new BrowserWindow({
   url,
   rpc,
   frame: { width: 1200, height: 800, x: 100, y: 100 },
+  styleMask: {
+    // These are the current defaults
+    Borderless: true,
+    Titled: true,
+    Closable: true,
+    Miniaturizable: true,
+    Resizable: true,
+    UnifiedTitleAndToolbar: false,
+    FullScreen: false,
+    FullSizeContentView: false,
+    UtilityWindow: false,
+    DocModalWindow: false,
+    NonactivatingPanel: false,
+    HUDWindow: false,
+  },
 });

@@ -20,25 +20,22 @@ async function apply() {
 </script>
 
 <template>
-  <div class="cfg">
-    <input v-model="path" placeholder="/path/to/Gadgetbridge.db" spellcheck="false" />
-    <button @click="apply">Apply</button>
-    <span v-if="status === 'ok'" class="ok">✓</span>
-    <span v-if="status === 'err'" class="err">✗ not found</span>
+  <div class="flex items-center gap-2">
+    <input
+      v-model="path"
+      placeholder="/path/to/Gadgetbridge.db"
+      spellcheck="false"
+      class="w-80 rounded-md border border-solid border-slate-100 bg-slate-800 px-2.5 py-1 text-sm text-slate-200"
+    />
+    <button
+      @click="apply"
+      class="cursor-pointer rounded-md border-none bg-indigo-500 px-3.5 py-1 text-sm text-white hover:bg-indigo-600"
+    >
+      Apply
+    </button>
+    <span v-if="status === 'ok'" class="text-sm text-green-400">✓</span>
+    <span v-if="status === 'err'" class="text-sm text-red-400"
+      >✗ not found</span
+    >
   </div>
 </template>
-
-<style scoped>
-.cfg { display: flex; align-items: center; gap: 8px; }
-input {
-  background: #1e2130; border: 1px solid #2d3148; color: #e2e8f0;
-  border-radius: 6px; padding: 5px 10px; font-size: 0.8rem; width: 340px;
-}
-button {
-  background: #6366f1; border: none; color: #fff;
-  border-radius: 6px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer;
-}
-button:hover { background: #4f46e5; }
-.ok  { color: #4ade80; font-size: 0.85rem; }
-.err { color: #f87171; font-size: 0.85rem; }
-</style>

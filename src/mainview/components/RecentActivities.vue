@@ -101,30 +101,44 @@ onMounted(loadActivities);
 </script>
 
 <template>
-    <div class="activities-container">
-        <div class="list-panel">
-            <h2>Recent Activities</h2>
-            <div v-if="loading && !activities.length" class="state">
+    <div
+        class="grid grid-cols-[320px_1fr] gap-4 bg-slate-800 border border-slate-700 rounded-xl p-5 mt-4 min-h-[400px]"
+    >
+        <div>
+            <h2 class="text-sm font-semibold text-slate-300 mb-4">
+                Recent Activities
+            </h2>
+            <div
+                v-if="loading && !activities.length"
+                class="p-5 text-center text-slate-400"
+            >
                 Loading...
             </div>
-            <div v-else-if="error" class="state error">{{ error }}</div>
-            <ul v-else class="activity-list">
+            <div v-else-if="error" class="p-5 text-center text-red-400">
+                {{ error }}
+            </div>
+            <ul v-else class="list-none p-0 m-0 h-[350px] overflow-y-auto">
                 <li
                     v-for="activity in activities"
                     :key="activity.startTime"
                     @click="selectActivity(activity)"
+                    class="px-3 py-2.5 border-b border-slate-700 cursor-pointer transition-colors duration-200 border-l-4"
                     :class="{
-                        'has-gpx': activity.gpxTrackFilename,
-                        selected: activity.startTime === selectedActivityId,
+                        'border-l-slate-500': activity.gpxTrackFilename,
+                        'bg-blue-500/10 border-l-blue-500':
+                            activity.startTime === selectedActivityId,
+                        'border-l-transparent': !activity.gpxTrackFilename,
                     }"
                 >
-                    <div class="activity-header">
-                        <strong>{{ getActivityName(activity.kind) }}</strong>
-                        <span class="timestamp">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <strong class="text-slate-200">{{
+                            getActivityName(activity.kind)
+                        }}</strong>
+                        <span class="text-xs text-slate-400">
                             {{ formatDate(activity.startTime) }}
                         </span>
                     </div>
-                    <div class="activity-details">
+                    <div class="text-sm text-slate-400 flex justify-between">
                         <span>
                             {{
                                 formatDuration(
@@ -135,23 +149,27 @@ onMounted(loadActivities);
                         </span>
                         <span
                             v-if="activity.gpxTrackFilename"
-                            class="gpx-indicator"
+                            class="text-emerald-500 font-medium"
                         >
                             🗺️ Map
-                            <span class="point-count">
+                            <span class="text-xs text-slate-400 ml-1">
                                 ({{ activity.pointCount ?? "N/A" }} pts)
                             </span>
                         </span>
                     </div>
                 </li>
             </ul>
-            <div class="load-more-container" v-if="!loading && hasMore">
-                <button @click="loadActivities(true)" :disabled="loadingMore">
+            <div class="text-center py-2.5" v-if="!loading && hasMore">
+                <button
+                    @click="loadActivities(true)"
+                    :disabled="loadingMore"
+                    class="bg-blue-500 text-white border-none py-2 px-4 rounded-md cursor-pointer text-sm transition-colors duration-200 hover:bg-blue-600 disabled:bg-slate-500 disabled:cursor-not-allowed"
+                >
                     {{ loadingMore ? "Loading..." : "Load More" }}
                 </button>
             </div>
         </div>
-        <div class="map-panel">
+        <div class="bg-slate-900 rounded-lg p-0 overflow-hidden">
             <ActivityMap
                 v-if="selectedActivityId"
                 :gpx-data="selectedGpxContent"
@@ -160,110 +178,3 @@ onMounted(loadActivities);
         </div>
     </div>
 </template>
-
-<style scoped>
-.activities-container {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 16px;
-    background: #1e2130;
-    border: 1px solid #2d3148;
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-top: 16px;
-    min-height: 400px;
-}
-.list-panel h2 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #cbd5e1;
-    margin-bottom: 16px;
-}
-.activity-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    height: 350px;
-    overflow-y: auto;
-}
-.activity-list li {
-    padding: 10px 12px;
-    border-bottom: 1px solid #2d3148;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border-left: 3px solid transparent;
-}
-.activity-list li:hover {
-    background-color: #2d3148;
-}
-.activity-list li.has-gpx {
-    border-left-color: #64748b;
-}
-.activity-list li.selected {
-    background-color: #3b82f620;
-    border-left-color: #3b82f6;
-}
-.activity-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-.activity-header strong {
-    color: #e2e8f0;
-}
-.timestamp {
-    font-size: 0.75rem;
-    color: #94a3b8;
-}
-.activity-details {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    display: flex;
-    justify-content: space-between;
-}
-.gpx-indicator {
-    color: #10b981;
-    font-weight: 500;
-}
-.point-count {
-    font-size: 0.7rem;
-    color: #94a3b8;
-    margin-left: 4px;
-}
-.map-panel {
-    background-color: #0f1117;
-    border-radius: 8px;
-    padding: 0;
-    overflow: hidden;
-}
-.state {
-    padding: 20px;
-    text-align: center;
-    color: #94a3b8;
-}
-.state.error {
-    color: #f87171;
-}
-.load-more-container {
-    text-align: center;
-    padding: 10px 0;
-}
-.load-more-container button {
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s;
-}
-.load-more-container button:hover {
-    background-color: #2563eb;
-}
-.load-more-container button:disabled {
-    background-color: #64748b;
-    cursor: not-allowed;
-}
-</style>

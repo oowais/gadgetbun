@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
-    gpxData: string | null;
+  gpxData: string | null;
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
@@ -16,71 +16,71 @@ let gpxLayer: L.FeatureGroup | null = null;
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl:
-        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 function initializeMap() {
-    if (mapContainer.value && !map) {
-        map = L.map(mapContainer.value);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(map);
-    }
+  if (mapContainer.value && !map) {
+    map = L.map(mapContainer.value);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+  }
 }
 
 function renderGpx() {
-    if (!map) return;
+  if (!map) return;
 
-    if (gpxLayer) {
-        map.removeLayer(gpxLayer);
-        gpxLayer = null;
+  if (gpxLayer) {
+    map.removeLayer(gpxLayer);
+    gpxLayer = null;
+  }
+
+  if (!props.gpxData) {
+    map.setView([20, 0], 2);
+    return;
+  }
+
+  try {
+    const gpx = GPX.parse(props.gpxData);
+    console.log(gpx.trk);
+    const points: L.LatLngExpression[] =
+      gpx.trk?.flatMap(
+        (t: any) =>
+          t.trkseg?.flatMap((s: any) =>
+            s.trkpt.map((p: any) => [p.$.lat, p.$.lon]),
+          ) ?? [],
+      ) ?? [];
+
+    if (points.length === 0) return;
+
+    const trackLine = L.polyline(points, { color: "#ef4444", weight: 3 });
+    gpxLayer = L.featureGroup([trackLine]);
+
+    if (points.length > 1) {
+      const startMarker = L.marker(points[0]);
+      const endMarker = L.marker(points[points.length - 1]);
+      gpxLayer.addLayer(startMarker).addLayer(endMarker);
     }
 
-    if (!props.gpxData) {
-        map.setView([20, 0], 2);
-        return;
-    }
+    gpxLayer.addTo(map);
 
-    try {
-        const gpx = GPX.parse(props.gpxData);
-        console.log(gpx.trk);
-        const points: L.LatLngExpression[] =
-            gpx.trk?.flatMap(
-                (t: any) =>
-                    t.trkseg?.flatMap((s: any) =>
-                        s.trkpt.map((p: any) => [p.$.lat, p.$.lon]),
-                    ) ?? [],
-            ) ?? [];
-
-        if (points.length === 0) return;
-
-        const trackLine = L.polyline(points, { color: "#ef4444", weight: 3 });
-        gpxLayer = L.featureGroup([trackLine]);
-
-        if (points.length > 1) {
-            const startMarker = L.marker(points[0]);
-            const endMarker = L.marker(points[points.length - 1]);
-            gpxLayer.addLayer(startMarker).addLayer(endMarker);
-        }
-
-        gpxLayer.addTo(map);
-
-        const bounds = trackLine.getBounds();
-        if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
-    } catch (e) {
-        console.error("Failed to parse or render GPX data:", e);
-    }
+    const bounds = trackLine.getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
+  } catch (e) {
+    console.error("Failed to parse or render GPX data:", e);
+  }
 }
 
 onMounted(() => {
-    if (typeof window !== "undefined") {
-        initializeMap();
-        renderGpx(); // Initial render (will show world view)
-    }
+  if (typeof window !== "undefined") {
+    initializeMap();
+    renderGpx(); // Initial render (will show world view)
+  }
 });
 
 // Watch for changes in gpxData and re-render the track
@@ -88,32 +88,15 @@ watch(() => props.gpxData, renderGpx);
 </script>
 
 <template>
-    <div ref="mapContainer" class="map-view">
-        <div v-if="!gpxData" class="no-track-overlay">
-            <p>Select an activity with a map to view the track.</p>
-        </div>
+  <div
+    ref="mapContainer"
+    class="relative h-full min-h-[350px] w-full rounded-lg bg-slate-800"
+  >
+    <div
+      v-if="!gpxData"
+      class="absolute inset-0 z-10 flex items-center justify-center text-slate-400"
+    >
+      <p>Select an activity with a map to view the track.</p>
     </div>
+  </div>
 </template>
-
-<style scoped>
-.map-view {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 350px;
-    border-radius: 8px;
-    background-color: #1e2130; /* Background for when map tiles are loading */
-}
-.no-track-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #94a3b8;
-    z-index: 1000; /* Ensure it's above the map container */
-}
-</style>
