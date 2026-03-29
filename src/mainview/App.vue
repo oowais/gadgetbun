@@ -1,243 +1,166 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import type { DashboardSummary } from "@/shared/types";
+import { inject, onMounted, ref } from "vue";
 
-const count = ref(0);
+const rpc = inject<any>("rpc");
+const summary = ref<DashboardSummary | null>(null);
+const loading = ref(true);
+const error = ref("");
 
-function increment() {
-  count.value += 1;
+async function loadSummary() {
+    loading.value = true;
+    error.value = "";
+    try {
+        summary.value = await rpc.request.getSummary({});
+    } catch (e: any) {
+        error.value = e.message ?? "Failed to load";
+    } finally {
+        loading.value = false;
+    }
 }
 
-function reset() {
-  count.value = 0;
-}
+onMounted(loadSummary);
+
+const fmtSteps = (n: number) => n.toLocaleString();
+const fmtSleep = (min: number) => `${Math.floor(min / 60)}h ${min % 60}m`;
 </script>
 
 <template>
-  <main>
-    <div class="container">
-      <h1>Vue + Electrobun</h1>
-      <p class="subtitle">A fast desktop app with hot module replacement</p>
+    <div class="app">
+        <header>
+            <h1>🩺 Gadgetbridge</h1>
+            <DbPathConfig @refreshed="loadSummary" />
+        </header>
 
-      <div class="card">
-        <h2>Interactive Counter</h2>
-        <p>
-          Click the button below to test Vue reactivity. With HMR enabled, you
-          can edit this component and see changes instantly without losing state.
-        </p>
-        <div class="button-group">
-          <button class="primary" @click="increment">
-            Count: {{ count }}
-          </button>
-          <button class="secondary" @click="reset">
-            Reset
-          </button>
+        <div v-if="loading" class="state">Loading…</div>
+        <div v-else-if="error" class="state error">
+            ⚠ {{ error }}<br /><small>Set the correct DB path above.</small>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Getting Started</h2>
-        <ul>
-          <li>
-            <span class="number">1.</span>
-            Run <code>bun run dev</code> for development without HMR
-          </li>
-          <li>
-            <span class="number">2.</span>
-            Run <code>bun run dev:hmr</code> for development with hot reload
-          </li>
-          <li>
-            <span class="number">3.</span>
-            Run <code>bun run build</code> to build for production
-          </li>
-        </ul>
-      </div>
+        <template v-else>
+            <section class="cards">
+                <div class="card steps">
+                    <div class="label">Today's Steps</div>
+                    <div class="value">{{ fmtSteps(summary!.todaySteps) }}</div>
+                </div>
+                <div class="card hr">
+                    <div class="label">Heart Rate</div>
+                    <div class="value">
+                        {{
+                            summary!.currentHR
+                                ? `${summary!.currentHR} bpm`
+                                : "—"
+                        }}
+                    </div>
+                    <div class="sub">7d avg: {{ summary!.avgHR7d }} bpm</div>
+                </div>
+                <div class="card sleep">
+                    <div class="label">Last Night</div>
+                    <div class="value">
+                        {{
+                            summary!.lastNightSleep
+                                ? fmtSleep(summary!.lastNightSleep.totalMin)
+                                : "—"
+                        }}
+                    </div>
+                    <div class="sub" v-if="summary!.lastNightSleep">
+                        Deep: {{ fmtSleep(summary!.lastNightSleep.deepMin) }} ·
+                        Light: {{ fmtSleep(summary!.lastNightSleep.lightMin) }}
+                    </div>
+                </div>
+            </section>
 
-      <div class="card">
-        <h2>Stack</h2>
-        <div class="stack-grid">
-          <div class="stack-item">
-            <span class="icon">⚡</span>
-            <span>Electrobun</span>
-          </div>
-          <div class="stack-item">
-            <span class="icon">💚</span>
-            <span>Vue 3</span>
-          </div>
-          <div class="stack-item">
-            <span class="icon">🔥</span>
-            <span>Vite HMR</span>
-          </div>
-          <div class="stack-item">
-            <span class="icon">📦</span>
-            <span>Bun</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer">
-        <p>
-          Edit <code>src/mainview/App.vue</code> and save to see HMR in action
-        </p>
-      </div>
+            <section class="charts">
+                <StepsChart />
+                <SleepChart />
+                <HeartRateChart />
+            </section>
+        </template>
     </div>
-  </main>
 </template>
 
-<style scoped>
-main {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #42b883 0%, #35495e 100%);
-  padding: 40px 20px;
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: system-ui, sans-serif;
 }
 
-.container {
-  max-width: 800px;
-  margin: 0 auto;
+.app {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-h1 {
-  color: white;
-  font-size: 3rem;
-  text-align: center;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
 }
 
-.subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.25rem;
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 40px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+.state {
+    text-align: center;
+    padding: 60px;
+    color: #94a3b8;
+}
+.state.error {
+    color: #f87171;
 }
 
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
 .card {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: #1e2130;
+    border-radius: 12px;
+    padding: 20px 24px;
+    border: 1px solid #2d3148;
+}
+.card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+.card .value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+.card .sub {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+.card.steps {
+    border-top: 3px solid #6366f1;
+}
+.card.hr {
+    border-top: 3px solid #ef4444;
+}
+.card.sleep {
+    border-top: 3px solid #3b82f6;
 }
 
-h2 {
-  color: #42b883;
-  margin-top: 0;
-  margin-bottom: 15px;
+.charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
 }
-
-p {
-  color: #666;
-  line-height: 1.6;
-}
-
-.button-group {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-button {
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: 500;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button.primary {
-  background: #42b883;
-  color: white;
-  box-shadow: 0 2px 4px rgba(66, 184, 131, 0.3);
-}
-
-button.primary:hover {
-  background: #3aa876;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(66, 184, 131, 0.4);
-}
-
-button.secondary {
-  background: #f0f0f0;
-  color: #666;
-}
-
-button.secondary:hover {
-  background: #e0e0e0;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  color: #666;
-}
-
-.number {
-  color: #42b883;
-  font-weight: bold;
-}
-
-code {
-  background: #f5f5f5;
-  color: #555;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-family: "Monaco", "Menlo", monospace;
-  font-size: 0.9em;
-}
-
-.stack-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-}
-
-.stack-item {
-  text-align: center;
-  padding: 20px 10px;
-  background: #fafafa;
-  border-radius: 8px;
-}
-
-.icon {
-  display: block;
-  font-size: 2rem;
-  margin-bottom: 8px;
-}
-
-.footer {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 30px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-}
-
-.footer p {
-  color: inherit;
-  margin: 0;
-}
-
-.footer code {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-}
-
-@media (max-width: 600px) {
-  .stack-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.charts > :first-child {
+    grid-column: 1 / -1;
 }
 </style>

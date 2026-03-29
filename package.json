@@ -11,6 +11,7 @@
 		"build:canary": "vite build && electrobun build --env=canary"
 	},
 	"dependencies": {
+		"chart.js": "^4.5.1",
 		"electrobun": "1.16.0"
 	},
 	"devDependencies": {
